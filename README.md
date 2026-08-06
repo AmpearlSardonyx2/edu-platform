@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CS Platform — Auth & Permissions Module
 
 ## What's in this project
@@ -85,3 +86,6 @@ session's `role` field).
 - Password reset flow (forgot-password email + token)
 - Email verification for credentials signups
 - Rate limiting on `/api/auth/register` and login attempts
+=======
+# edu-platform
+>>>>>>> bcf10dbae3128bdd48a51dd9795e76018d159729
