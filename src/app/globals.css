@@ -2,6 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background: #090d16;
+  --foreground: #f8fafc;
+}
+
 body {
-  @apply bg-gray-50 text-gray-900;
+  background-color: #080c14;
+  color: #f1f5f9;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom sci-fi scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0f1d;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Neon Glow utilities */
+.glow-emerald {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+}
+.glow-indigo {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+}
+.glow-purple {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+}
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.25);
+}
+
+/* CRT Screen Scanline effect for mini robot screen */
+.crt-screen {
+  background: radial-gradient(circle, #052e16 0%, #022c22 70%, #000000 100%);
+  position: relative;
+  overflow: hidden;
+}
+.crt-screen::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.04));
+  z-index: 2;
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
 }

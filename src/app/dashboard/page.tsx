@@ -102,27 +102,57 @@ export default async function DashboardPage() {
         {/* Continue learning */}
         <Link
           href="/learn/bubble-sort"
-          className="block rounded-2xl p-6 border border-slate-200 dark:border-white/10
-                     bg-white dark:bg-white/[0.03] hover:border-emerald-400/50 dark:hover:border-emerald-400/30
-                     transition group"
+          className="relative overflow-hidden block rounded-3xl p-7 border border-slate-800
+                     bg-gradient-to-r from-[#0c1424] via-[#0f172a] to-[#1e1b4b] hover:border-emerald-500/40
+                     transition-all duration-300 group shadow-2xl"
         >
-          <p className="text-xs uppercase tracking-wide text-emerald-600 dark:text-emerald-400 font-semibold mb-1">
-            Continue learning
-          </p>
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Bubble Sort</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                You're doing great. Let's continue where you left off.
+          {/* Background ambient glow */}
+          <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-indigo-500/10 via-cyan-500/5 to-transparent pointer-events-none" />
+
+          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6 z-10">
+            <div className="space-y-2">
+              <span className="text-[11px] uppercase tracking-widest text-emerald-400 font-mono font-bold bg-emerald-950/60 px-2.5 py-0.5 rounded border border-emerald-800">
+                Continue Learning
+              </span>
+              <h2 className="text-2xl font-black text-white tracking-wide">Bubble Sort</h2>
+              <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
+                You're doing great! Let's continue where you left off. Arrange the warehouse cargo crates with your robot assistant.
               </p>
+              <div className="pt-2">
+                <span className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-xs px-5 py-2.5 shadow-[0_0_20px_rgba(16,185,129,0.3)] group-hover:scale-105 transition">
+                  Continue Lesson <ArrowRight size={15} />
+                </span>
+              </div>
             </div>
-            <span
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 text-white
-                         text-sm font-medium px-4 py-2 group-hover:bg-emerald-600 transition"
-            >
-              Continue lesson
-              <ArrowRight size={16} />
-            </span>
+
+            {/* Glowing 3D crates & robot companion graphic matching dashboard,visual design.jpeg */}
+            <div className="flex items-end gap-2.5 self-center md:self-auto py-2">
+              <div className="w-10 h-16 rounded-xl bg-gradient-to-t from-purple-700 to-indigo-500 border border-purple-400/40 shadow-[0_0_15px_rgba(168,85,247,0.3)] flex items-center justify-center font-mono font-bold text-white text-sm">
+                5
+              </div>
+              <div className="w-10 h-12 rounded-xl bg-gradient-to-t from-amber-600 to-orange-500 border border-amber-400/40 shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center justify-center font-mono font-bold text-white text-sm">
+                2
+              </div>
+
+              {/* Robot Mascot in the middle */}
+              <div className="flex flex-col items-center mx-1">
+                <div className="w-9 h-8 rounded-xl bg-slate-800 border border-cyan-400 flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.4)]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mx-0.5" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mx-0.5" />
+                </div>
+                <div className="w-7 h-5 rounded-b-lg bg-slate-700 border-x border-b border-slate-600" />
+              </div>
+
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-t from-cyan-700 to-blue-500 border border-cyan-400/40 shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center font-mono font-bold text-white text-sm">
+                1
+              </div>
+              <div className="w-10 h-20 rounded-xl bg-gradient-to-t from-blue-700 to-cyan-500 border border-blue-400/40 shadow-[0_0_15px_rgba(59,130,246,0.3)] flex items-center justify-center font-mono font-bold text-white text-sm">
+                9
+              </div>
+              <div className="w-10 h-14 rounded-xl bg-gradient-to-t from-purple-700 to-indigo-500 border border-purple-400/40 shadow-[0_0_15px_rgba(168,85,247,0.3)] flex items-center justify-center font-mono font-bold text-white text-sm">
+                3
+              </div>
+            </div>
           </div>
         </Link>
 
