@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Play, Pause, SkipBack, SkipForward, Shuffle, AlertCircle, Sparkles, Volume2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Shuffle, AlertCircle, Sparkles } from "lucide-react";
 
 type StepAction = "start" | "compare" | "swap" | "mark_sorted" | "done";
 interface Slot { id: number; value: number; }
@@ -60,56 +60,6 @@ function runTrace(code: string, inputArray: number[], entryFn: string): { steps:
   }
 }
 
-function fillTemplate(tpl: string, vars: Record<string, string | number>) {
-  return tpl.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
-}
-
-function codeLineFor(action: StepAction): string {
-  const map: Record<StepAction, string> = { 
-    start: "// Warehouse initialized — crates on conveyor", 
-    compare: "if (arr[j] > arr[j + 1])", 
-    swap: "let temp = arr[j]; arr[j] = arr[j+1]; arr[j+1] = temp;", 
-    mark_sorted: "// Crate locked in final sorted position", 
-    done: "return arr; // All crates sorted!" 
-  };
-  return map[action] || "";
-}
-
-function explainStep(explanations: LessonExplanations, steps: TraceStep[], stepIndex: number): string {
-  const current = steps[stepIndex];
-  if (!current) return "";
-  const prev = stepIndex > 0 ? steps[stepIndex - 1] : null;
-  const valueAt = (arr: Slot[], pos: number) => arr[pos]?.value;
-
-  switch (current.action) {
-    case "start": return explanations?.start || "The cargo robot is ready to inspect the crates.";
-    case "compare": {
-      const [i, j] = current.indices;
-      const a = valueAt(current.array, i), b = valueAt(current.array, j);
-      return (a as number) > (b as number)
-        ? fillTemplate(explanations?.compareGreater || "Comparing {a} and {b}: {a} > {b}, swap needed!", { a, b })
-        : fillTemplate(explanations?.compareLess || "Comparing {a} and {b}: already in order, no swap needed.", { a, b });
-    }
-    case "swap": {
-      const [i, j] = current.indices;
-      const before = prev?.array ?? current.array;
-      return fillTemplate(explanations?.swap || "Swapping crates {a} and {b} on the belt!", { a: valueAt(before, i), b: valueAt(before, j) });
-    }
-    case "mark_sorted": return fillTemplate(explanations?.markSorted || "Crate {v} locked in its final spot.", { v: valueAt(current.array, current.indices[0]) });
-    case "done": return explanations?.done || "All crates are fully sorted! Ready for launch sequence.";
-    default: return "";
-  }
-}
-
-function crateGradient(state: "default" | "compare" | "swap" | "sorted") {
-  return {
-    default: "linear-gradient(180deg, #4338ca 0%, #312e81 100%)", // sleek sci-fi purple
-    compare: "linear-gradient(180deg, #0ea5e9 0%, #0369a1 100%)", // glowing cyan
-    swap: "linear-gradient(180deg, #f59e0b 0%, #b45309 100%)", // amber warning swap
-    sorted: "linear-gradient(180deg, #10b981 0%, #047857 100%)", // emerald sorted
-  }[state];
-}
-
 export default function LessonPreview({
   code,
   entryFunctionName,
@@ -130,9 +80,9 @@ export default function LessonPreview({
   const [speed, setSpeed] = useState(1000);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const barWidth = compact ? 44 : 58;
+  const barWidth = compact ? 48 : 64;
   const current = steps[stepIndex] || steps[0];
-  const slideMs = Math.max(250, Math.min(speed - 100, 800));
+  const slideMs = Math.max(250, Math.min(speed - 100, 750));
 
   const sortedPositions = useMemo(() => {
     const s = new Set<number>();
@@ -141,8 +91,6 @@ export default function LessonPreview({
     }
     return s;
   }, [stepIndex, steps]);
-
-  const explanation = useMemo(() => explainStep(explanations, steps, stepIndex), [explanations, steps, stepIndex]);
 
   const executeAndReset = useCallback((codeToRun: string, arr: number[]) => {
     const result = runTrace(codeToRun, arr, entryFunctionName);
@@ -178,7 +126,7 @@ export default function LessonPreview({
 
   const handleApplyInput = () => {
     const parsed = inputValue.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n));
-    if (parsed.length >= 2 && parsed.length <= 10) { 
+    if (parsed.length >= 2 && parsed.length <= 8) { 
       setBaseArray(parsed); 
       executeAndReset(code, parsed); 
     }
@@ -192,266 +140,259 @@ export default function LessonPreview({
   };
 
   const totalWidth = current.array.length * barWidth;
-  const progress = steps.length > 1 ? Math.round((stepIndex / (steps.length - 1)) * 100) : 0;
   const isScanning = current.action === "compare";
   const isSwapping = current.action === "swap";
 
-  // Speech bubble text for the robot
+  // Speech bubble text
   let robotBubble = "Scanning crates...";
-  if (current.action === "start") robotBubble = "Ready to sort!";
+  if (current.action === "start") robotBubble = "Ready to sort crates!";
   else if (current.action === "compare" && current.indices.length === 2) {
     const valA = current.array[current.indices[0]]?.value;
     const valB = current.array[current.indices[1]]?.value;
-    robotBubble = valA > valB ? `Comparing ${valA} & ${valB}: Swap needed!` : `Comparing ${valA} & ${valB}: No swap`;
+    robotBubble = valA > valB ? `Comparing ${valA} and ${valB}: Swap needed!` : `Comparing ${valA} and ${valB}: No swap needed`;
   } else if (current.action === "swap") {
-    robotBubble = `Swapping crates!`;
+    robotBubble = `Swapping crates on conveyor!`;
   } else if (current.action === "mark_sorted") {
-    robotBubble = `Locked in position!`;
+    robotBubble = `Crate locked in final position!`;
   } else if (current.action === "done") {
-    robotBubble = `Sorting complete! 🎉`;
+    robotBubble = `All crates sorted! Launch ready! 🚀`;
   }
 
   return (
-    <div className={`flex flex-col gap-3.5 select-none ${compact ? "" : "h-full"}`}>
-      {/* Top Telemetry Bar inside Visualizer */}
-      <div className="flex items-center justify-between text-xs px-1">
+    <div className={`flex flex-col justify-between gap-4 select-none ${compact ? "" : "h-full"}`}>
+      
+      {/* Top Header of Visualizer */}
+      <div className="flex items-center justify-between px-1 text-xs">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-cyan-400 font-bold bg-cyan-950/60 px-2.5 py-0.5 rounded border border-cyan-800">
-            PASS {current.pass || 1} &gt; STEP {stepIndex + 1}
-          </span>
-          <span className="text-slate-400 font-mono text-[11px]">
-            ({stepIndex + 1} / {steps.length})
+          <span className="font-bold tracking-wider uppercase text-slate-800 dark:text-slate-200">
+            Visualization
           </span>
         </div>
 
-        {/* Speed Slider */}
-        <div className="flex items-center gap-2 text-slate-400 text-xs">
-          <span>Speed</span>
-          <input 
-            type="range" 
-            min="200" 
-            max="1800" 
-            step="100" 
-            value={2000 - speed} 
-            onChange={(e) => setSpeed(2000 - Number(e.target.value))} 
-            className="w-20 accent-cyan-400 cursor-pointer" 
-          />
-          <span className="font-mono text-slate-300 w-8 text-right">
-            {(1000 / speed).toFixed(1)}x
+        <div className="flex items-center gap-4">
+          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-cyan-400 bg-indigo-50 dark:bg-cyan-950/60 px-2.5 py-0.5 rounded-lg border border-indigo-200 dark:border-cyan-800">
+            PASS {current.pass || 1} &gt; STEP {stepIndex + 1}
           </span>
+
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs">
+            <span>Speed</span>
+            <input 
+              type="range" 
+              min="200" 
+              max="1800" 
+              step="100" 
+              value={2000 - speed} 
+              onChange={(e) => setSpeed(2000 - Number(e.target.value))} 
+              className="w-16 accent-indigo-600 dark:accent-cyan-400 cursor-pointer" 
+            />
+            <span className="font-mono text-[11px] w-7 text-right">
+              {(1000 / speed).toFixed(1)}x
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Futuristic Conveyor Belt Apparatus Viewport */}
+      {/* Futuristic 3D Conveyor Belt Arena matching visualizition.jpeg */}
       <div
-        className="relative rounded-2xl overflow-hidden border border-slate-800/80 shadow-2xl flex flex-col justify-end p-6"
+        className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800/90 shadow-xl flex-1 flex flex-col justify-between p-6 transition-all duration-300"
         style={{
-          background: "radial-gradient(ellipse at center, #0f172a 0%, #070b14 100%)",
+          background: "radial-gradient(ellipse at center, var(--card) 0%, var(--background) 100%)",
           minHeight: compact ? 260 : 340,
         }}
       >
-        {/* Subtle grid background */}
+        {/* Subtle grid pattern */}
         <div
-          className="absolute inset-0 opacity-[0.05] pointer-events-none"
-          style={{ backgroundImage: "linear-gradient(#38bdf8 1px, transparent 1px), linear-gradient(90deg, #38bdf8 1px, transparent 1px)", backgroundSize: "32px 32px" }}
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage: "linear-gradient(#818cf8 1px, transparent 1px), linear-gradient(90deg, #818cf8 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
         />
 
         {/* Robot Speech Bubble */}
-        <div 
-          className="absolute top-6 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 border border-cyan-500/50 rounded-full px-4 py-1.5 shadow-[0_0_15px_rgba(6,182,212,0.25)] flex items-center gap-2 text-xs text-cyan-300 font-mono backdrop-blur transition-all"
-        >
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span>{robotBubble}</span>
+        <div className="relative z-20 flex justify-center">
+          <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-cyan-500/50 rounded-full px-5 py-1.5 shadow-lg flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-cyan-300 font-mono backdrop-blur transition-all">
+            <span className="w-2 h-2 rounded-full bg-indigo-500 dark:bg-cyan-400 animate-pulse" />
+            <span>{robotBubble}</span>
+          </div>
         </div>
 
         {/* Conveyor Belt & Crates Arena */}
-        <div className="relative mx-auto flex flex-col items-center" style={{ width: totalWidth, height: 180 }}>
+        <div className="relative mx-auto flex flex-col items-center justify-end my-4" style={{ width: totalWidth, height: 190 }}>
           
-          {/* Animated Robot on Overhead Track */}
+          {/* Animated 3D Robot Mascot along conveyor track */}
           <div 
-            className="absolute top-0 z-20 flex flex-col items-center" 
+            className="absolute top-2 z-20 flex flex-col items-center transition-all"
             style={{ 
               left: robotLeft, 
               transform: "translateX(-50%)", 
-              transition: `left ${slideMs}ms cubic-bezier(0.45,0,0.2,1)` 
+              transitionDuration: `${slideMs}ms`,
             }}
           >
-            {/* Robot Head with glowing eyes */}
-            <div className="relative w-10 h-9 bg-slate-800 border border-slate-600 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(6,182,212,0.4)]">
+            {/* Robot Head */}
+            <div className="relative w-12 h-10 bg-slate-100 dark:bg-slate-800 border-2 border-indigo-400 dark:border-cyan-400 rounded-2xl flex items-center justify-center gap-2 shadow-md dark:shadow-[0_0_15px_rgba(6,182,212,0.4)]">
               <div 
                 className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                  isSwapping ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" : isScanning ? "bg-cyan-400 shadow-[0_0_6px_#06b6d4]" : "bg-slate-400"
+                  isSwapping ? "bg-amber-500" : isScanning ? "bg-cyan-400" : "bg-slate-400"
                 }`} 
               />
               <div 
                 className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                  isSwapping ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" : isScanning ? "bg-cyan-400 shadow-[0_0_6px_#06b6d4]" : "bg-slate-400"
+                  isSwapping ? "bg-amber-500" : isScanning ? "bg-cyan-400" : "bg-slate-400"
                 }`} 
               />
               {/* Antenna */}
-              <div className="absolute -top-2 w-1 h-2 bg-slate-500 rounded-t" />
-              <div className="absolute -top-3 w-2 h-2 bg-cyan-400 rounded-full animate-ping" />
+              <div className="absolute -top-2 w-1 h-2 bg-slate-400 rounded-t" />
+              <div className="absolute -top-3.5 w-2 h-2 bg-indigo-500 dark:bg-cyan-400 rounded-full animate-ping" />
             </div>
 
             {/* Scanning Light Cone */}
             {isScanning && (
               <div 
-                className="w-16 h-14 bg-gradient-to-b from-cyan-400/40 to-transparent pointer-events-none" 
-                style={{ clipPath: "polygon(40% 0%, 60% 0%, 100% 100%, 0% 100%)" }} 
+                className="w-20 h-16 bg-gradient-to-b from-indigo-500/20 dark:from-cyan-400/35 to-transparent pointer-events-none" 
+                style={{ clipPath: "polygon(35% 0%, 65% 0%, 100% 100%, 0% 100%)" }} 
               />
             )}
           </div>
 
           {/* Cargo Crates on Belt */}
-          <div className="absolute bottom-6 left-0 right-0 h-28 flex items-end">
+          <div className="absolute bottom-5 left-0 right-0 h-32 flex items-end">
             {current.array.map((slot, posIdx) => {
               const isSwapPos = current.action === "swap" && current.indices.includes(posIdx);
               const isComparePos = current.action === "compare" && current.indices.includes(posIdx);
               const isSorted = sortedPositions.has(posIdx);
-              const state = isSorted ? "sorted" : isSwapPos ? "swap" : isComparePos ? "compare" : "default";
-              const crateHeight = Math.min(90, 48 + slot.value * 2.2);
+
+              // Colors matching visualizition.jpeg and light theme design.jpeg
+              let crateBg = "bg-gradient-to-b from-indigo-500 to-indigo-700 dark:from-slate-700 dark:to-slate-800 text-white";
+              let crateBorder = "border-indigo-300 dark:border-slate-600";
+              let glowStyle = "shadow-md";
+
+              if (isComparePos) {
+                // In visualizition.jpeg: one compared item is cyan, one is amber
+                const isFirst = current.indices[0] === posIdx;
+                if (isFirst) {
+                  crateBg = "bg-gradient-to-b from-cyan-400 to-cyan-600 text-white";
+                  crateBorder = "border-cyan-300";
+                  glowStyle = "shadow-[0_0_20px_rgba(6,182,212,0.6)] scale-105";
+                } else {
+                  crateBg = "bg-gradient-to-b from-amber-400 to-amber-600 text-white";
+                  crateBorder = "border-amber-300";
+                  glowStyle = "shadow-[0_0_20px_rgba(245,158,11,0.6)] scale-105";
+                }
+              } else if (isSwapPos) {
+                crateBg = "bg-gradient-to-b from-rose-500 to-rose-700 text-white animate-bounce";
+                crateBorder = "border-rose-300";
+                glowStyle = "shadow-[0_0_25px_rgba(244,63,94,0.6)]";
+              } else if (isSorted) {
+                crateBg = "bg-gradient-to-b from-emerald-500 to-emerald-700 text-white";
+                crateBorder = "border-emerald-300";
+                glowStyle = "shadow-[0_0_15px_rgba(16,185,129,0.5)]";
+              }
+
+              const crateHeight = Math.min(95, 48 + slot.value * 2.2);
 
               return (
                 <div
                   key={slot.id}
-                  className="absolute bottom-0 flex flex-col items-center"
+                  className="absolute bottom-0 flex flex-col items-center transition-all duration-300"
                   style={{
                     left: posIdx * barWidth,
-                    width: barWidth - 10,
-                    transition: `left ${slideMs}ms cubic-bezier(0.4,0,0.2,1)`,
+                    width: barWidth - 12,
                   }}
                 >
-                  {/* Sorted sticker */}
                   {isSorted && (
-                    <span className="mb-1 text-[9px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 px-1.5 py-0.2 rounded-full">
+                    <span className="mb-1 text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.2 rounded-full shadow">
                       ✓
                     </span>
                   )}
 
-                  {/* 3D Sci-Fi Cargo Crate */}
+                  {/* 3D Crate Body */}
                   <div
-                    className="relative w-full rounded-xl flex items-center justify-center text-white font-mono text-sm font-bold shadow-xl border border-white/20 overflow-hidden"
-                    style={{
-                      height: crateHeight,
-                      background: crateGradient(state),
-                      transition: "background 250ms ease",
-                      boxShadow: isComparePos 
-                        ? "0 0 15px rgba(14,165,233,0.5)" 
-                        : isSwapPos 
-                        ? "0 0 15px rgba(245,158,11,0.5)" 
-                        : isSorted 
-                        ? "0 0 15px rgba(16,185,129,0.4)" 
-                        : "0 4px 10px rgba(0,0,0,0.5)",
-                    }}
+                    className={`relative w-full rounded-2xl flex items-center justify-center font-mono text-base font-black border-2 transition-all duration-200 ${crateBg} ${crateBorder} ${glowStyle}`}
+                    style={{ height: crateHeight }}
                   >
-                    {/* Metal cargo rivets detail */}
-                    <div className="absolute top-1.5 left-1.5 w-1 h-1 rounded-full bg-white/40" />
-                    <div className="absolute top-1.5 right-1.5 w-1 h-1 rounded-full bg-white/40" />
-                    <div className="absolute bottom-1.5 left-1.5 w-1 h-1 rounded-full bg-white/40" />
-                    <div className="absolute bottom-1.5 right-1.5 w-1 h-1 rounded-full bg-white/40" />
-                    <span className="drop-shadow-md text-base">{slot.value}</span>
+                    {/* Metallic rivets */}
+                    <span className="absolute top-1 left-1.5 w-1 h-1 rounded-full bg-white/40" />
+                    <span className="absolute top-1 right-1.5 w-1 h-1 rounded-full bg-white/40" />
+                    <span className="absolute bottom-1 left-1.5 w-1 h-1 rounded-full bg-white/40" />
+                    <span className="absolute bottom-1 right-1.5 w-1 h-1 rounded-full bg-white/40" />
+                    <span className="drop-shadow">{slot.value}</span>
                   </div>
 
                   {/* Floor Shadow */}
-                  <div className="mt-1.5 rounded-full bg-black/60 blur-[3px]" style={{ width: barWidth - 20, height: 4 }} />
+                  <div className="mt-1 rounded-full bg-slate-900/30 dark:bg-black/60 blur-[3px]" style={{ width: barWidth - 24, height: 4 }} />
                 </div>
               );
             })}
           </div>
 
-          {/* Industrial Conveyor Belt */}
-          <div className="absolute bottom-0 left-0 right-0 h-4 bg-slate-800 rounded-lg border-t border-slate-700 shadow-inner flex items-center justify-between px-2 overflow-hidden">
-            <div className="w-full h-1 bg-slate-700/50 rounded-full" />
+          {/* 3D Perspective Conveyor Belt matching mockup */}
+          <div className="absolute bottom-0 left-0 right-0 h-4 bg-slate-300 dark:bg-slate-800 rounded-lg border-t-2 border-slate-400 dark:border-slate-700 shadow-inner flex items-center justify-between px-3 overflow-hidden">
+            <div className="w-full h-1 bg-slate-400 dark:bg-slate-600 rounded-full opacity-60" />
           </div>
         </div>
 
-        {/* Completion Celebration Overlay */}
-        {current.action === "done" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm z-30 animate-fade-in">
-            <div className="text-center p-4 bg-slate-900 border border-emerald-500/60 rounded-2xl shadow-2xl">
-              <span className="text-2xl">🎉</span>
-              <h4 className="text-base font-bold text-white mt-1">Cargo Sorted & Locked!</h4>
-              <p className="text-xs text-slate-400 mt-0.5">All crates reached their final positions.</p>
-            </div>
-          </div>
-        )}
-      </div>
+        {/* Playback Controls matching visualizition.jpeg */}
+        <div className="relative z-20 flex items-center justify-center gap-6 pt-2">
+          <button
+            onClick={() => setStepIndex((p) => Math.max(0, p - 1))}
+            disabled={stepIndex === 0}
+            className="p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-30 transition shadow-sm"
+            title="Previous Step"
+          >
+            <SkipBack size={16} />
+          </button>
 
-      {/* Code line & robot explanation card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col gap-1.5">
-        <code className="text-xs font-mono text-cyan-300 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800/80 w-fit">
-          {codeLineFor(current.action)}
-        </code>
-        <p className="text-xs text-slate-300 leading-relaxed font-sans">{explanation}</p>
-      </div>
+          {/* Big Floating Play/Pause Button with glowing gradient */}
+          <button
+            onClick={() => {
+              if (stepIndex >= steps.length - 1) setStepIndex(0);
+              setIsPlaying((p) => !p);
+            }}
+            className="w-12 h-12 rounded-full bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold transition shadow-lg shadow-indigo-500/30 flex items-center justify-center scale-105 active:scale-95"
+            title={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <Pause size={18} /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
+          </button>
 
-      {/* Playback Controls & Progress Bar */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => setStepIndex((p) => Math.max(0, p - 1))}
-          disabled={stepIndex === 0}
-          className="p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition"
-          title="Previous Step"
-        >
-          <SkipBack size={15} />
-        </button>
-
-        <button
-          onClick={() => {
-            if (stepIndex >= steps.length - 1) setStepIndex(0);
-            setIsPlaying((p) => !p);
-          }}
-          className="p-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold transition shadow-lg shadow-cyan-500/20"
-          title={isPlaying ? "Pause" : "Play"}
-        >
-          {isPlaying ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
-        </button>
-
-        <button
-          onClick={() => setStepIndex((p) => Math.min(steps.length - 1, p + 1))}
-          disabled={stepIndex === steps.length - 1}
-          className="p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition"
-          title="Next Step"
-        >
-          <SkipForward size={15} />
-        </button>
-
-        {/* Step Progress Line */}
-        <div className="flex-1 h-2 bg-slate-900 border border-slate-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 transition-all duration-200"
-            style={{ width: `${progress}%` }}
-          />
+          <button
+            onClick={() => setStepIndex((p) => Math.min(steps.length - 1, p + 1))}
+            disabled={stepIndex === steps.length - 1}
+            className="p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-30 transition shadow-sm"
+            title="Next Step"
+          >
+            <SkipForward size={16} />
+          </button>
         </div>
       </div>
 
-      {/* Custom Array Input Bar */}
-      <div className="flex items-center gap-2 pt-1">
-        <span className="text-xs text-slate-400 font-mono">Input:</span>
+      {/* Bottom Custom Array Input Bar matching mockup */}
+      <div className="flex items-center gap-3 bg-white dark:bg-[#090e17] border border-slate-200 dark:border-slate-800 p-2.5 rounded-2xl shadow-sm text-xs">
+        <span className="font-mono text-slate-500 dark:text-slate-400 font-semibold pl-2">Input:</span>
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="e.g. 5, 2, 8, 1, 9, 3"
-          className="text-xs border border-slate-800 bg-slate-900 rounded-lg px-3 py-1.5 font-mono text-slate-200 flex-1 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+          className="flex-1 bg-slate-50 dark:bg-[#060a12] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500"
         />
         <button
           onClick={handleApplyInput}
-          className="text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 transition"
+          className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold transition"
         >
           Apply
         </button>
         <button
           onClick={handleShuffle}
-          className="text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 transition flex items-center gap-1.5"
+          className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold transition flex items-center gap-1.5"
         >
-          <Shuffle size={12} /> Random
+          <Shuffle size={13} /> Random
         </button>
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 bg-rose-950/40 border border-rose-800 text-rose-300 text-xs rounded-lg px-3 py-2">
-          <AlertCircle size={14} className="mt-0.5 shrink-0 text-rose-400" />
+        <div className="flex items-start gap-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs rounded-xl p-3">
+          <AlertCircle size={15} className="mt-0.5 shrink-0 text-rose-500" />
           <span className="font-mono">{error}</span>
         </div>
       )}
